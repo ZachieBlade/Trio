@@ -84,7 +84,6 @@ extension Notification.Name {
         if #available(iOS 16.2, *) {
             _ = resolver.resolve(LiveActivityManager.self)!
         }
-        _ = resolver.resolve(IOBService.self)!
     }
 
     init() {

@@ -101,8 +101,6 @@ extension Onboarding {
         var isConnectedToNS: Bool = false
         var nightscoutImportError: NightscoutImportError?
         var nightscoutImportStatus: ImportStatus = .none
-        var isUploadEnabled: Bool = true
-        var uploadGlucose: Bool = true
 
         // MARK: - Units and Pump Omboarding Option
 
@@ -706,11 +704,6 @@ extension Onboarding {
         func applyToSettings() {
             var settingsCopy = settingsManager.settings
             settingsCopy.units = units
-
-            if nightscoutSetupOption == .setupNightscout {
-                settingsCopy.isUploadEnabled = isUploadEnabled
-                settingsCopy.uploadGlucose = uploadGlucose
-            }
 
             // ensure existing values cannot exceed new guardrails
             if !isFreshTrioInstall {

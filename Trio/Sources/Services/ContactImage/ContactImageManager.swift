@@ -23,7 +23,6 @@ final class BaseContactImageManager: NSObject, ContactImageManager, Injectable {
     @Injected() private var contactImageStorage: ContactImageStorage!
     @Injected() private var settingsManager: SettingsManager!
     @Injected() private var fileStorage: FileStorage!
-    @Injected() private var iobService: IOBService!
 
     private let contactStore = CNContactStore()
 
@@ -62,17 +61,6 @@ final class BaseContactImageManager: NSObject, ContactImageManager, Injectable {
                 .eraseToAnyPublisher()
 
         glucoseStorage.updatePublisher
-            .receive(on: DispatchQueue.global(qos: .background))
-            .sink { [weak self] _ in
-                guard let self = self else { return }
-                Task {
-                    await self.updateContactImageState()
-                    await self.updateContactImages()
-                }
-            }
-            .store(in: &subscriptions)
-
-        iobService.iobPublisher
             .receive(on: DispatchQueue.global(qos: .background))
             .sink { [weak self] _ in
                 guard let self = self else { return }
@@ -219,7 +207,7 @@ final class BaseContactImageManager: NSObject, ContactImageManager, Injectable {
 
             state.lastLoopDate = lastDetermination?.timestamp
 
-            let iobValue = iobService.currentIOB ?? 0.0
+            let iobValue = lastDetermination?.iob as? Decimal ?? 0.0
             state.iob = iobValue
             state.iobText = Formatter.decimalFormatterWithOneFractionDigit.string(from: iobValue as NSNumber)
 

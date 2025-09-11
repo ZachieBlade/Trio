@@ -30,7 +30,6 @@ protocol APSManager {
     func roundBolus(amount: Decimal) -> Decimal
     var lastError: CurrentValueSubject<Error?, Never> { get }
     func cancelBolus(_ callback: ((Bool, String) -> Void)?) async
-    var iobFileDidUpdate: PassthroughSubject<Void, Never> { get }
 }
 
 enum APSError: LocalizedError {
@@ -108,7 +107,6 @@ final class BaseAPSManager: APSManager, Injectable {
     let isLooping = CurrentValueSubject<Bool, Never>(false)
     let lastLoopDateSubject = PassthroughSubject<Date, Never>()
     let lastError = CurrentValueSubject<Error?, Never>(nil)
-    let iobFileDidUpdate = PassthroughSubject<Void, Never>()
 
     let bolusProgress = CurrentValueSubject<Decimal?, Never>(nil)
 
@@ -461,7 +459,6 @@ final class BaseAPSManager: APSManager, Injectable {
             _ = try await autosenseResult
             try await openAPS.createProfiles()
             let determination = try await openAPS.determineBasal(currentTemp: await currentTemp, clock: now)
-            iobFileDidUpdate.send(())
 
             guard isValidGlucoseData else {
                 throw APSError.glucoseError(message: "Glucose validation failed")
@@ -477,8 +474,6 @@ final class BaseAPSManager: APSManager, Injectable {
                 }
             }
         } catch {
-            iobFileDidUpdate.send(())
-
             // if we have a glucose validation error we might still run
             // determineBasal to try to get IoB and CoB updates but we
             // know that it will fail, so the invalidGlucoseError always
