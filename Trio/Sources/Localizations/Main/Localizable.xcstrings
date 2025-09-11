@@ -14045,6 +14045,9 @@
         }
       }
     },
+    "• Medtrum Nano (200u/300u)" : {
+
+    },
     "• Nightscout" : {
       "localizations" : {
         "bg" : {
@@ -140476,6 +140479,9 @@
           }
         }
       }
+    },
+    "Medtrum Nano" : {
+
     },
     "Menu" : {
       "comment" : "Menu",
