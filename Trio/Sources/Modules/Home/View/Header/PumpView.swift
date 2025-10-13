@@ -5,6 +5,7 @@ struct PumpView: View {
     let reservoir: Decimal?
     let name: String
     let expiresAtDate: Date?
+    let activatedAtDate: Date?
     let timerDate: Date
     let pumpStatusHighlightMessage: String?
     let battery: [OpenAPS_Battery]
@@ -17,6 +18,7 @@ struct PumpView: View {
     }
 
     private var hourglassIcon: String {
+        if activatedAtDate != nil { return "hourglass" }
         guard let expiration = expiresAtDate else { return "hourglass" }
 
         let hoursRemaining = expiration.timeIntervalSince(timerDate) / 3600
@@ -96,32 +98,42 @@ struct PumpView: View {
                 }
 
                 if let date = expiresAtDate {
-                    HStack {
-                        Image(systemName: hourglassIcon)
-                            .font(.callout)
-                            .foregroundStyle(timerColor, Color.yellow)
-                            .symbolRenderingMode(.palette)
+                    PatchTimer(date, isExpiration: true)
+                }
 
-                        let remainingTimeString = remainingTimeString(time: date.timeIntervalSince(timerDate))
-
-                        Text(remainingTimeString)
-                            .font(date.timeIntervalSince(timerDate) > 0 ? .callout : .subheadline)
-                            .fontWeight(.bold)
-                            .fontDesign(.rounded)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-                            .frame(
-                                // If the string is > 6 chars, i.e., exceeds "xd yh", limit width to 80 pts
-                                // This forces the "Replace pod" string to wrap to 2 lines.
-                                maxWidth: remainingTimeString.count > 6 ? 80 : .infinity,
-                                alignment: .leading
-                            )
-                    }
-                    // aligns the stopwatch icon exactly with the first pixel of the reservoir icon
-                    .padding(.leading, date.timeIntervalSince(timerDate) > 0 ? 12 : 0)
+                if let date = activatedAtDate {
+                    PatchTimer(date, isExpiration: false)
                 }
             }
         }
+    }
+
+    @ViewBuilder private func PatchTimer(_ date: Date, isExpiration: Bool) -> some View {
+        HStack {
+            Image(systemName: hourglassIcon)
+                .font(.callout)
+                .foregroundStyle(timerColor, Color.yellow)
+                .symbolRenderingMode(.palette)
+
+            let remainingTimeString = isExpiration ?
+                remainingTimeString(time: date.timeIntervalSince(timerDate)) :
+                activeTimeString(time: timerDate.timeIntervalSince(date))
+
+            Text(remainingTimeString)
+                .font(date.timeIntervalSince(timerDate) > 0 ? .callout : .subheadline)
+                .fontWeight(.bold)
+                .fontDesign(.rounded)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .frame(
+                    // If the string is > 6 chars, i.e., exceeds "xd yh", limit width to 80 pts
+                    // This forces the "Replace pod" string to wrap to 2 lines.
+                    maxWidth: remainingTimeString.count > 6 ? 80 : .infinity,
+                    alignment: .leading
+                )
+        }
+        // aligns the stopwatch icon exactly with the first pixel of the reservoir icon
+        .padding(.leading, date.timeIntervalSince(timerDate) > 0 || !isExpiration ? 12 : 0)
     }
 
     private func remainingTimeString(time: TimeInterval) -> String {
@@ -146,6 +158,23 @@ struct PumpView: View {
         }
 
         return "\(minutes)" + String(localized: "m", comment: "abbreviation for minutes")
+    }
+
+    private func activeTimeString(time: TimeInterval) -> String {
+        var time = time
+        let days = Int(time / 1.days.timeInterval)
+        time -= days.days.timeInterval
+        let hours = Int(time / 1.hours.timeInterval)
+        time -= hours.hours.timeInterval
+        let minutes = Int(time / 1.minutes.timeInterval)
+
+        if days >= 1 {
+            return "\(days)" + String(localized: "d", comment: "abbreviation for days") + " \(hours)" +
+                String(localized: "h", comment: "abbreviation for hours")
+        }
+
+        return "\(hours)" + String(localized: "h", comment: "abbreviation for hours") + "\(minutes)" +
+            String(localized: "m", comment: "abbreviation for minutes")
     }
 
     private var batteryColor: Color {
@@ -179,11 +208,15 @@ struct PumpView: View {
     }
 
     private var timerColor: Color {
-        guard let expisesAt = expiresAtDate else {
+        if activatedAtDate != nil {
+            return Color.loopGreen
+        }
+
+        guard let expiresAt = expiresAtDate else {
             return .gray
         }
 
-        let time = expisesAt.timeIntervalSince(timerDate)
+        let time = expiresAt.timeIntervalSince(timerDate)
 
         switch time {
         case ...8.hours.timeInterval:
